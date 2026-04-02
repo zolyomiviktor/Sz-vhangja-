@@ -194,6 +194,7 @@ foreach ($reports_raw as $r) {
         <div style="font-weight: bold; font-size: 1.2rem;">Szívhangja Admin - Moderáció</div>
         <div>
             Szia, <?= htmlspecialchars($admin_user['nickname']) ?>!
+            <a href="forum_moderation.php" style="color: white; margin-left:1rem; text-decoration: underline;">Fórum Szűrő</a>
             <a href="index.php" style="color: white; margin-left:1rem; text-decoration: underline;">Vissza a pultra</a>
         </div>
     </header>
