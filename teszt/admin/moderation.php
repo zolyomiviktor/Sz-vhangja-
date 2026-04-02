@@ -44,11 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Jelentések lekérése
 $stmt = $pdo->prepare("
-    SELECT r.*, u_reporter.nickname as reporter_name
+    SELECT r.*, u_reporter.nickname as reporter_name,
+           (r.chat_context IS NOT NULL AND r.reason LIKE 'Pánikgomb%') as is_urgent
     FROM reports r 
     JOIN users u_reporter ON r.reporter_id = u_reporter.id
     WHERE r.status = 'pending'
-    ORDER BY r.created_at ASC
+    ORDER BY is_urgent DESC, r.created_at ASC
 ");
 $stmt->execute();
 $reports_raw = $stmt->fetchAll();
@@ -172,6 +173,18 @@ foreach ($reports_raw as $r) {
             background: #e3f2fd;
             color: #1976d2;
         }
+
+        @keyframes pulseAlert {
+            0% { box-shadow: 0 0 0 0 rgba(234, 67, 53, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(234, 67, 53, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 67, 53, 0); }
+        }
+        .urgent-badge {
+            background: #ea4335;
+            color: white;
+            margin-left: 0.5rem;
+            animation: pulseAlert 2s infinite;
+        }
     </style>
 </head>
 
@@ -217,6 +230,9 @@ foreach ($reports_raw as $r) {
 
                     <div style="margin-bottom: 1rem;">
                         <span class="badge type-badge"><?= $r['content_type'] ?></span>
+                        <?php if (!empty($r['is_urgent'])): ?>
+                            <span class="badge urgent-badge">⚠️ SÜRGŐS</span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="report-reason">Ok: <?= htmlspecialchars($r['reason']) ?></div>

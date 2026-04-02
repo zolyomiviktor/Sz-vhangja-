@@ -59,9 +59,14 @@ $sql = "SELECT id, nickname, birth_date, gender, bio, residence, profile_image, 
                mobility_status, assistive_devices, is_transport_accessible, 
                children, smoking, looking_for_friendship, sexual_orientation
         FROM users 
-        WHERE id != ? AND status = 'approved' AND is_hidden = 0";
+        WHERE id != ? 
+          AND status = 'approved' 
+          AND is_hidden = 0
+          AND id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
+          AND id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
+";
 
-$params = [$current_user_id];
+$params = [$current_user_id, $current_user_id, $current_user_id];
 
 // 1. Életkor Szűrés
 if ($min_age) {

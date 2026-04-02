@@ -14,43 +14,10 @@ $current_user_id = $_SESSION['user_id'];
 $error = '';
 $success = '';
 
-// Pánikgomb Logika (Jelentés / Blokkolás)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && in_array($_POST['action'], ['report', 'report_block'])) {
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die("Biztonsági hiba: Érvénytelen CSRF token.");
-    }
-
-    $target_id = (int)$_POST['target_id'];
-    $action_to_log = $_POST['action'] === 'report_block' ? 'block' : 'report';
-
-    try {
-        // Rögzítjük az interakciót (pl. 'report' vagy 'block') a felhasználói interakciók között
-        $stmt = $pdo->prepare("INSERT INTO interactions (user_id, target_id, action) VALUES (?, ?, ?)");
-        $stmt->execute([$current_user_id, $target_id, $action_to_log]);
-
-        // Ugyanakkor küldjük be a Jelentések (reports) táblába is, hogy lássa az Admin!
-        $reason = $_POST['action'] === 'report_block' ? "Pánikgomb: Jelentés és Azonnali Blokkolás a chatből." : "Pánikgomb: Moderátori jelentés a chatből.";
-        $stmt_rep = $pdo->prepare("INSERT INTO reports (content_type, content_id, reporter_id, reason, status) VALUES ('user', ?, ?, ?, 'pending')");
-        $stmt_rep->execute([$target_id, $current_user_id, $reason]);
-
-        if ($_POST['action'] === 'report_block') {
-            // Blokkolás esetén töröljük az esetleges matchet
-            $del_match = $pdo->prepare("DELETE FROM matches WHERE (user_one_id = ? AND user_two_id = ?) OR (user_one_id = ? AND user_two_id = ?)");
-            $del_match->execute([$current_user_id, $target_id, $target_id, $current_user_id]);
-            
-            $_SESSION['success_msg'] = "Felhasználó jelentve és blokkolva.";
-            header("Location: messages.php");
-            exit;
-        } else {
-            $success = "A felhasználót sikeresen jelentetted a moderátoroknak.";
-        }
-    } catch (PDOException $e) {
-        $error = "Hiba történt a jelentés során: " . $e->getMessage();
-    }
-}
+// A pánikgomb (Jelentés / Blokkolás) logikáját mostantól a különálló report_handler.php végzi.
 
 // 1. Üzenet Küldése Logika
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['send_message'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['send_message']) || isset($_POST['body']))) {
     // CSRF Ellenőrzés
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         die("Biztonsági hiba: Érvénytelen CSRF token.");
@@ -160,7 +127,15 @@ if ($other_user_id) {
                     ELSE sender_id 
                 END as partner_id
             FROM messages 
-            WHERE sender_id = :uid2 OR recipient_id = :uid3
+            WHERE (sender_id = :uid2 OR recipient_id = :uid3)
+              AND CASE 
+                    WHEN sender_id = :uid4 THEN recipient_id 
+                    ELSE sender_id 
+                  END NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = :uid5)
+              AND CASE 
+                    WHEN sender_id = :uid6 THEN recipient_id 
+                    ELSE sender_id 
+                  END NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = :uid7)
             GROUP BY partner_id
         ) last_msgs
         JOIN messages m ON last_msgs.max_id = m.id
@@ -171,14 +146,25 @@ if ($other_user_id) {
     $stmt_conv->execute([
         ':uid1' => $current_user_id,
         ':uid2' => $current_user_id,
-        ':uid3' => $current_user_id
+        ':uid3' => $current_user_id,
+        ':uid4' => $current_user_id,
+        ':uid5' => $current_user_id,
+        ':uid6' => $current_user_id,
+        ':uid7' => $current_user_id
     ]);
     $conversations = $stmt_conv->fetchAll();
 }
 
-// 4. Felhasználók listája a "Címzett" legördülőhöz (kivéve magunkat)
-$stmt_users = $pdo->prepare("SELECT id, nickname, email FROM users WHERE id != ? ORDER BY nickname");
-$stmt_users->execute([$current_user_id]);
+// 4. Felhasználók listája a "Címzett" legördülőhöz (kivéve magunkat ÉS a blokkoltakat)
+$stmt_users = $pdo->prepare("
+    SELECT id, nickname, email 
+    FROM users 
+    WHERE id != ? 
+      AND id NOT IN (SELECT blocked_id FROM blocks WHERE blocker_id = ?)
+      AND id NOT IN (SELECT blocker_id FROM blocks WHERE blocked_id = ?)
+    ORDER BY nickname
+");
+$stmt_users->execute([$current_user_id, $current_user_id, $current_user_id]);
 $users = $stmt_users->fetchAll();
 ?>
 
@@ -680,6 +666,17 @@ $users = $stmt_users->fetchAll();
             <aside class="conversation-sidebar" aria-label="Beszélgetések listája">
                 <div class="sidebar-header">
                     <h2>Üzenetek</h2>
+                    <!-- Új üzenet indítása -->
+                    <div style="margin-top: 1rem;">
+                        <form action="messages.php" method="GET" style="display: flex; gap: 8px;">
+                            <select name="recipient_id" class="filter-input" style="flex: 1; font-size: 0.85rem;" onchange="this.form.submit()">
+                                <option value="">Új üzenet küldése...</option>
+                                <?php foreach ($users as $u): ?>
+                                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nickname']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    </div>
                 </div>
 
                 <?php if (!$other_user_id): ?>
@@ -853,7 +850,7 @@ $users = $stmt_users->fetchAll();
                 <h3 id="panic-modal-title" class="glass-modal-title">Probléma jelentése</h3>
                 <p class="glass-modal-desc">Kérjük, válaszd ki, milyen műveletet szeretnél végrehajtani a felhasználóval kapcsolatban.</p>
                 
-                <form id="panic-form" action="messages.php?recipient_id=<?= $other_user_id ?>" method="POST">
+                <form id="panic-form" action="report_handler.php" method="POST">
                     <input type="hidden" name="action" id="panic-action" value="">
                     <input type="hidden" name="target_id" value="<?= $other_user_id ?>">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
