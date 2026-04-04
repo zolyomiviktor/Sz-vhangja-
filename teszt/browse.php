@@ -336,9 +336,11 @@ function isOnline($lastLogin)
             if (action === 'pass') {
                 cardWrapper.style.transform = 'translateX(-100px) rotate(-10deg)';
                 cardWrapper.style.opacity = '0';
+                if (window.Accessibility) Accessibility.announce('Profil elutasítva');
             } else {
                 cardWrapper.style.transform = 'translateX(100px) rotate(10deg)';
                 cardWrapper.style.opacity = '0';
+                if (window.Accessibility) Accessibility.announce('Profil kedvelve');
             }
 
             setTimeout(() => cardWrapper.remove(), 300);

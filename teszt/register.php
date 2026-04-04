@@ -418,7 +418,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <div class="form-group">
                             <label>Születési dátum (18+):</label>
                             <div style="display: flex; gap: 0.5rem;">
-                                <select name="birth_year" id="birth_year" required aria-required="true" style="flex: 2;">
+                                <select name="birth_year" id="birth_year" required aria-required="true" aria-label="Születési év" style="flex: 2;">
                                     <option value="">Év</option>
                                     <?php
                                     $currentYear = date('Y');
@@ -426,14 +426,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                         <option value="<?= $y ?>" <?= ($birth_year == $y) ? 'selected' : '' ?>><?= $y ?></option>
                                     <?php endfor; ?>
                                 </select>
-                                <select name="birth_month" id="birth_month" required aria-required="true" style="flex: 2;">
+                                <select name="birth_month" id="birth_month" required aria-required="true" aria-label="Születési hónap" style="flex: 2;">
                                     <option value="">Hónap</option>
                                     <?php
                                     for ($m = 1; $m <= 12; $m++): ?>
                                         <option value="<?= $m ?>" <?= ($birth_month == $m) ? 'selected' : '' ?>><?= $m ?></option>
                                     <?php endfor; ?>
                                 </select>
-                                <select name="birth_day" id="birth_day" required aria-required="true" style="flex: 1;">
+                                <select name="birth_day" id="birth_day" required aria-required="true" aria-label="Születési nap" style="flex: 1;">
                                     <option value="">Nap</option>
                                     <?php
                                     for ($d = 1; $d <= 31; $d++): ?>
@@ -529,8 +529,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <span>Kép kiválasztása...</span>
                             </label>
                             <input type="file" id="profile_image" name="profile_image" class="hidden-input"
-                                accept="image/jpeg,image/jpg,image/png,image/webp" aria-describedby="profile-image-desc"
-                                onchange="document.querySelector('#file-label span').textContent = this.files[0] ? this.files[0].name : 'Kép kiválasztása...';">
+                                accept="image/jpeg,image/jpg,image/png,image/webp" aria-describedby="profile-image-desc">
                             <div id="profile-image-desc" class="help-text">
                                 Elfogadott formátumok: JPG, PNG, WebP. Maximum méret: 5MB. A kép automatikusan 4:5 arányra
                                 lesz vágva.

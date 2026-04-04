@@ -91,7 +91,7 @@ if (
             </svg>
         </div>
 
-        <h1 class="hero-title">Szívhangja</h1>
+        <p class="hero-title" aria-hidden="true">Szívhangja</p>
 
         <p style="font-size:1.2rem; max-width:600px;">
             Akadálymentes társkeresés mindenkinek.

@@ -41,9 +41,19 @@ header { position: sticky !important; top: 0 !important; z-index: 1000 !importan
 <header role="banner" class="glass-header">
     <nav aria-label="Fő menü">
         <!-- Bal oldal: Logó -->
-        <a href="index.php" class="nav-logo" aria-label="Szívhangja főoldal">
-            Szívhangja
-        </a>
+        <?php if ($current_page == 'index.php'): ?>
+            <h1 class="nav-logo-container">
+                <a href="index.php" class="nav-logo" aria-label="Szívhangja főoldal">
+                    Szívhangja
+                </a>
+            </h1>
+        <?php else: ?>
+            <div class="nav-logo-container">
+                <a href="index.php" class="nav-logo" aria-label="Szívhangja főoldal">
+                    Szívhangja
+                </a>
+            </div>
+        <?php endif; ?>
 
         <?php if ($user_data): ?>
             <!-- Navigációs Menü (Modernizált Szöveg) -->
@@ -58,9 +68,9 @@ header { position: sticky !important; top: 0 !important; z-index: 1000 !importan
 
             <!-- Jobb oldal: Felhasználó -->
             <div class="nav-right">
-                <?php if ($currentUserId && canAccessForum($pdo, $currentUserId)): ?>
-                    <a href="forum.php?action=new" onclick="if(window.location.pathname.endsWith('forum.php')) { document.getElementById('newPostModal').style.display='flex'; return false; }" class="btn btn-small" style="background: var(--primary-coral); padding: 0.5rem 1.2rem; display: flex; align-items: center; gap: 8px;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                <?php if (isset($uid) && function_exists('canAccessForum') && canAccessForum($pdo, $uid)): ?>
+                    <a href="forum.php?action=new" role="button" onclick="if(window.location.pathname.endsWith('forum.php')) { document.getElementById('newPostModal').style.display='flex'; return false; }" class="btn btn-small" style="background: var(--primary-coral); padding: 0.5rem 1.2rem; display: flex; align-items: center; gap: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         <span>Új poszt</span>
                     </a>
                 <?php endif; ?>

@@ -121,8 +121,8 @@ $posts = $stmt_posts->fetchAll();
                 Oszd meg a gondolataidat, kérj tanácsot, vagy csak kapcsolódj ki a közösségünk tagjaival egy barátságos felületen.
             </p>
 
-            <button onclick="document.getElementById('newPostModal').style.display='flex'" class="btn" style="background: white; color: var(--forum-pink); min-width: 280px; padding: 1.3rem; font-size: 1.1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px;"><path d="M12 5v14M5 12h14"/></svg>
+            <button id="openNewPostBtn" class="btn" style="background: white; color: var(--forum-pink); min-width: 280px; padding: 1.3rem; font-size: 1.1rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px;" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                 Új beszélgetés indítása
             </button>
         </section>
@@ -182,27 +182,27 @@ $posts = $stmt_posts->fetchAll();
             <aside>
                 <div class="glass-sidebar">
                     <h2 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; margin-bottom: 2rem; font-weight: 800;">Kategóriák</h2>
-                    <nav aria-label="Kategória navigáció">
+                    <div role="navigation" aria-label="Kategória navigáció" style="display: flex; flex-direction: column;">
                         <?php foreach ($categories as $cat): ?>
                             <a href="category_view.php?id=<?= $cat['id'] ?>" style="display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 1.5rem; background: white; border-radius: 20px; border: 1px solid #f1f5f9; margin-bottom: 0.8rem; transition: all 0.3s; font-weight: 600; color: #475569; text-decoration: none;">
                                 <span><?= htmlspecialchars($cat['name']) ?></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--forum-coral);"><path d="m9 18 6-6-6-6"/></svg>
                             </a>
                         <?php endforeach; ?>
-                    </nav>
+                    </div>
                 </div>
             </aside>
         </div>
     </main>
 
     <!-- Post Modal -->
-    <div id="newPostModal">
+    <div id="newPostModal" role="dialog" aria-modal="true" aria-labelledby="new-post-title">
         <div class="modal-content">
-            <button class="modal-close" onclick="document.getElementById('newPostModal').style.display='none'" aria-label="Bezárás">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button class="modal-close" aria-label="Bezárás">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
 
-            <h2 style="margin: 0 0 0.5rem; color: var(--forum-pink); font-family: 'Montserrat', sans-serif; font-size: 2.2rem;">Új beszélgetés</h2>
+            <h2 id="new-post-title" style="margin: 0 0 0.5rem; color: var(--forum-pink); font-family: 'Montserrat', sans-serif; font-size: 2.2rem;">Új beszélgetés</h2>
             <p style="color: #64748b; margin-bottom: 2.5rem;">Írj valamit, amivel segíthetsz másoknak vagy kérdezz bátran.</p>
 
             <form action="create_post.php" method="POST">
@@ -238,16 +238,19 @@ $posts = $stmt_posts->fetchAll();
     <?php include 'footer.php'; ?>
 
     <script>
-        window.onclick = function(e) {
-            if (e.target == document.getElementById('newPostModal')) document.getElementById('newPostModal').style.display='none';
-        }
-        const p = new URLSearchParams(window.location.search);
-        if (p.get('action')==='new') document.getElementById('newPostModal').style.display='flex';
-    </script>
-</body>
-</html>
-t.getElementById('newPostModal').style.display = 'flex';
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const openBtn = document.getElementById('openNewPostBtn');
+            if (openBtn) {
+                openBtn.addEventListener('click', () => {
+                    Accessibility.openModal('newPostModal', openBtn);
+                });
+            }
+
+            const p = new URLSearchParams(window.location.search);
+            if (p.get('action') === 'new') {
+                setTimeout(() => Accessibility.openModal('newPostModal', openBtn), 500);
+            }
+        });
     </script>
 </body>
 </html>

@@ -36,6 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $error = "A regisztrációs kérelmedet elutasították.";
                     } elseif ($user['status'] === 'approved') {
                         // Sikeres belépés
+                        session_regenerate_id(true);
                         $_SESSION['user_id'] = $user['id'];
                         $_SESSION['nickname'] = $user['nickname'];
 

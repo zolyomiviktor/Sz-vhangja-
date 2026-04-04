@@ -669,12 +669,14 @@ $users = $stmt_users->fetchAll();
                     <!-- Új üzenet indítása -->
                     <div style="margin-top: 1rem;">
                         <form action="messages.php" method="GET" style="display: flex; gap: 8px;">
-                            <select name="recipient_id" class="filter-input" style="flex: 1; font-size: 0.85rem;" onchange="this.form.submit()">
-                                <option value="">Új üzenet küldése...</option>
+                            <label for="recipient-select" class="sr-only">Címzett választása</label>
+                            <select id="recipient-select" name="recipient_id" class="filter-input" style="flex: 1; font-size: 0.85rem;" aria-label="Új üzenet küldése beszélgetés indításához">
+                                <option value="">Válassz partnert...</option>
                                 <?php foreach ($users as $u): ?>
-                                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nickname']) ?></option>
+                                    <option value="<?= $u['id'] ?>" <?= (isset($_GET['recipient_id']) && $_GET['recipient_id'] == $u['id']) ? 'selected' : '' ?>><?= htmlspecialchars($u['nickname']) ?></option>
                                 <?php endforeach; ?>
                             </select>
+                            <button type="submit" class="btn btn-small" aria-label="Ugrás a beszélgetésre">Ugrás</button>
                         </form>
                     </div>
                 </div>
@@ -855,13 +857,13 @@ $users = $stmt_users->fetchAll();
                     <input type="hidden" name="target_id" value="<?= $other_user_id ?>">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
                     
-                    <button type="button" class="glass-modal-btn btn-report-only" onclick="submitPanic('report')">
+                    <button type="button" class="glass-modal-btn btn-report-only" id="report-only-btn">
                         Csak jelentem a moderátoroknak
                     </button>
-                    <button type="button" class="glass-modal-btn btn-report-block" onclick="submitPanic('report_block')">
+                    <button type="button" class="glass-modal-btn btn-report-block" id="report-block-btn">
                         Jelentem és azonnal blokkolom
                     </button>
-                    <button type="button" class="glass-modal-btn btn-cancel-modal" onclick="closePanicModal()">
+                    <button type="button" class="glass-modal-btn btn-cancel-modal">
                         Mégsem
                     </button>
                 </form>
@@ -874,58 +876,24 @@ $users = $stmt_users->fetchAll();
     <?php include 'footer.php'; ?>
 
     <script>
-        // Auto-resize textarea
+        // Üzenetek görgetése az aljára
         document.addEventListener('DOMContentLoaded', function () {
+            const chatMessages = document.querySelector('.chat-messages');
+            if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Enter billentyűvel való küldés textarea esetén
             const textarea = document.querySelector('.chat-input');
             if (textarea) {
-                textarea.addEventListener('input', function () {
-                    this.style.height = 'auto';
-                    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-                });
-
-                // Enter to send, Shift+Enter for new line
                 textarea.addEventListener('keydown', function (e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         this.closest('form').submit();
                     }
                 });
-
-                // Auto-scroll to bottom
-                const chatMessages = document.querySelector('.chat-messages');
-                if (chatMessages) {
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }
-            }
-
-            // Panic Button Logic
-            const panicBtn = document.getElementById('panic-btn');
-            const panicModal = document.getElementById('panic-modal');
-            
-            if (panicBtn && panicModal) {
-                panicBtn.addEventListener('click', () => {
-                    panicModal.classList.add('active');
-                    panicModal.setAttribute('aria-hidden', 'false');
-                });
-            }
-
-            // Close modal on outside click
-            if (panicModal) {
-                panicModal.addEventListener('click', (e) => {
-                    if (e.target === panicModal) {
-                        closePanicModal();
-                    }
-                });
             }
         });
-
-        function closePanicModal() {
-            const panicModal = document.getElementById('panic-modal');
-            if (panicModal) {
-                panicModal.classList.remove('active');
-                panicModal.setAttribute('aria-hidden', 'true');
-            }
-        }
 
         function submitPanic(actionStr) {
             const panicAction = document.getElementById('panic-action');

@@ -18,11 +18,11 @@
   --bg-body: #ffffff;
   --bg-section: #ffffff;
   --bg-soft: #fff5f5;
-  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-bg: rgba(255, 255, 255, 0.88); /* Megemelt opacitás az olvashatóságért */
 
   /* Szövegszínek */
   --text-main: #2d3436;
-  --text-muted: #636e72;
+  --text-muted: #57606f; /* Sötétebb szürke a 4.5:1 kontrasztért */
   --text-light: #ffffff;
 
   /* UI Elemek */
@@ -174,8 +174,9 @@
 }
 
 .filter-input:focus {
-  outline: none !important;
-  border-color: var(--primary-coral) !important;
+  outline: 3px solid var(--primary-color) !important; /* Szín mellett keret is jelenjen meg */
+  outline-offset: 2px !important;
+  border-color: var(--primary-color) !important;
 }
 
 .notif-badge-small {
@@ -308,8 +309,9 @@ body {
 }
 
 a {
-  color: var(--primary-coral);
-  text-decoration: none;
+  color: var(--primary-color); /* Korall helyett az erősebb színt használjuk linkeknek a kontraszt miatt */
+  text-decoration: underline; /* Egyértelműbb jelzés a linkeknek */
+  text-underline-offset: 3px;
 }
 
 /* Global Focus Styles - High Visibility */
@@ -372,6 +374,12 @@ header {
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   padding: 0;
+}
+
+.nav-logo-container {
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
 }
 
 .nav-logo {
@@ -647,8 +655,9 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(216, 27, 96, 0.1);
+  outline: 3px solid var(--primary-color); /* Erősebb fókusz jelzése */
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(205, 19, 85, 0.15);
 }
 
 /* Custom File Input Styling */
@@ -1127,8 +1136,8 @@ footer {
 }
 
 .notification-card .meta {
-  color: #666666 !important;
-  font-size: 13px;
+  color: #57606f !important;
+  font-size: 0.85rem; /* px helyett rem */
   display: block;
   margin-bottom: 0.4rem;
 }
@@ -1408,7 +1417,7 @@ footer {
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--primary-coral);
+  color: var(--primary-hover); /* Sötétebb korall/piros a fehér hátteren való olvashatóságért */
   z-index: 2;
 }
 

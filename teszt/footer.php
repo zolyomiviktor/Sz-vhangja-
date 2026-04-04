@@ -11,3 +11,4 @@
     </div>
     <p style="color: var(--text-muted);">&copy; <?= date('Y') ?> Szívhangja</p>
 </footer>
+<script src="script.js?v=<?= time() ?>"></script>

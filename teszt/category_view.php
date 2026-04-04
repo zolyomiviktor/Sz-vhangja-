@@ -132,14 +132,14 @@ $categories = $pdo->query("SELECT * FROM forum_categories ORDER BY name ASC")->f
             <aside>
                 <div style="background: white; border-radius: 32px; padding: 2.5rem; border: 1px solid #f0f0f0; position: sticky; top: 120px;">
                     <h2 style="font-size: 1rem; text-transform: uppercase; letter-spacing: 1.5px; color: #999; margin-bottom: 2rem;">Kategóriák</h2>
-                    <nav>
+                    <div role="navigation" aria-label="Kategória navigáció" style="display: flex; flex-direction: column;">
                         <?php foreach ($categories as $cat): ?>
                             <a href="category_view.php?id=<?= $cat['id'] ?>" class="category-sidebar-link <?= $cat['id'] == $categoryId ? 'active' : '' ?>">
                                 <span><?= htmlspecialchars($cat['name']) ?></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
                             </a>
                         <?php endforeach; ?>
-                    </nav>
+                    </div>
                 </div>
             </aside>
         </div>
