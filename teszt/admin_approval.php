@@ -1,11 +1,22 @@
 <?php
 // admin_approval.php - Adminisztrációs felület jóváhagyáshoz
+// Kapcsoljuk be a hibaüzeneteket a hibakeresés idejére
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require 'db.php'; // Session és DB
 require 'email_helper.php';
 
-// Jogosultság ellenőrzése
-if (!isset($_SESSION['user_id']) || empty($_SESSION['is_admin'])) {
-    die("Hiba: Nincs jogosultságod az oldal megtekintéséhez.");
+// Jogosultság ellenőrzése - Ellenőrizzük a 'role' mezőt is, ha az 'is_admin' hiányozna
+if (!isset($_SESSION['user_id']) || (!empty($_SESSION['role']) && $_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'super_admin' && empty($_SESSION['is_admin']))) {
+    // Ha be van jelentkezve, de nem admin
+    if (isset($_SESSION['user_id'])) {
+        die("Hiba: Nincs adminisztrátori jogosultságod az oldal megtekintéséhez. (Szerepkör: " . ($_SESSION['role'] ?? 'nincs') . ")");
+    } else {
+        header("Location: login.php");
+        exit;
+    }
 }
 
 $message = '';
@@ -13,8 +24,8 @@ $message = '';
 // Jóváhagyás / Elutasítás logika
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF ellenőrzés
-    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-        die("Biztonsági hiba: Érvénytelen CSRF token.");
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== ($_SESSION['csrf_token'] ?? '')) {
+        die("Biztonsági hiba: Érvénytelen vagy lejárt CSRF token. Kérlek frissítsd az oldalt!");
     }
 
     $target_user_id = $_POST['user_id'];
@@ -27,32 +38,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $pdo->prepare("UPDATE users SET status = ? WHERE id = ?");
             if ($stmt->execute([$new_status, $target_user_id])) {
 
-                // Email küldés szimulációja
+                // Felhasználó adatainak lekérése az értesítéshez
                 $stmt_email = $pdo->prepare("SELECT email, nickname FROM users WHERE id = ?");
                 $stmt_email->execute([$target_user_id]);
                 $user_data = $stmt_email->fetch();
 
-                if ($action === 'approve') {
+                if ($user_data && $action === 'approve') {
                     require_once 'notification_helper.php';
 
                     create_notification(
                         $target_user_id,
                         'approval',
                         "A felhasználói fiókodat jóváhagytuk! Most már használhatod az oldalt.",
-                        "profile.php", // Link a saját profilra
+                        "profile.php",
                         "Fiók aktiválva - Szívhangja",
                         "Kedves " . $user_data['nickname'] . "!\n\nÖrömmel értesítünk, hogy regisztrációd a Szívhangja társkeresőn jóváhagyásra került.\nMost már bejelentkezhetsz."
                     );
 
                     $message = "Siker! " . htmlspecialchars($user_data['nickname']) . " fiókja aktiválva. (Értesítés + Email kiküldve)";
 
-                } else {
+                } elseif ($user_data && $action === 'reject') {
                     $message = "Siker! " . htmlspecialchars($user_data['nickname']) . " kérelme elutasítva.";
+                } else {
+                    $message = "A művelet sikeres volt, de a felhasználó adatai nem találhatók az értesítéshez.";
                 }
 
             }
-        } catch (PDOException $e) {
-            $message = "Hiba történt: " . $e->getMessage();
+        } catch (Throwable $e) {
+            // Throwable elkapja a Error-t és Exception-t is (PHP 7+)
+            $message = "Hiba történt a feldolgozás során: " . $e->getMessage();
+            error_log("Admin Approval Error: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
         }
     }
 }

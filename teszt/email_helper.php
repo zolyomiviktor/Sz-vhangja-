@@ -64,9 +64,12 @@ function send_system_email($to, $subject, $body)
         $mail->Body    = $body;
 
         return $mail->send();
-    } catch (Exception $e) {
+    } catch (Throwable $e) {
         // Hibanaplózás, a felhasználónak ne dobjunk 500-as hibát
-        error_log("Email küldési hiba: {$mail->ErrorInfo}");
+        error_log("Email küldési hiba: " . $e->getMessage());
+        if (isset($mail)) {
+             error_log("PHPMailer hiba: {$mail->ErrorInfo}");
+        }
         return false;
     }
 }

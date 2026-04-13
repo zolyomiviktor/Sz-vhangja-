@@ -1,4 +1,11 @@
 <?php
+// DEBUG: Ha látod ezt a szöveget, a PHP fut.
+echo "DEBUG: user_view.php betöltve..."; 
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 require 'auth_check.php';
 
 $user_id = $_GET['id'] ?? 0;
@@ -12,40 +19,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $action = $_POST['action'];
     $reason = $_POST['reason'] ?? '';
 
-    if ($action === 'ban') {
-        $stmt = $pdo->prepare("UPDATE users SET status = 'banned' WHERE id = ?");
-        $stmt->execute([$user_id]);
+    try {
+        if ($action === 'ban') {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'banned' WHERE id = ?");
+            $stmt->execute([$user_id]);
 
-        // Logolás
-        $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
-        $stmt_log->execute([$_SESSION['admin_id'], 'ban_user', $user_id, "Ok: $reason", $_SERVER['REMOTE_ADDR']]);
+            // Logolás
+            $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
+            $stmt_log->execute([$_SESSION['admin_id'], 'ban_user', $user_id, "Ok: $reason", $_SERVER['REMOTE_ADDR']]);
 
-        $success_msg = "Felhasználó kitiltva.";
-    } elseif ($action === 'activate') {
-        $stmt = $pdo->prepare("UPDATE users SET status = 'active' WHERE id = ?");
-        $stmt->execute([$user_id]);
+            $success_msg = "Felhasználó kitiltva.";
+        } elseif ($action === 'activate') {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'active' WHERE id = ?");
+            $stmt->execute([$user_id]);
 
-        $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
-        $stmt_log->execute([$_SESSION['admin_id'], 'activate_user', $user_id, "Kézi aktiválás", $_SERVER['REMOTE_ADDR']]);
+            $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
+            $stmt_log->execute([$_SESSION['admin_id'], 'activate_user', $user_id, "Kézi aktiválás", $_SERVER['REMOTE_ADDR']]);
 
-        $success_msg = "Felhasználó aktiválva.";
-    } elseif ($action === 'approve') {
-        $stmt = $pdo->prepare("UPDATE users SET status = 'approved' WHERE id = ?");
-        $stmt->execute([$user_id]);
+            $success_msg = "Felhasználó aktiválva.";
+        } elseif ($action === 'approve') {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'approved' WHERE id = ?");
+            $stmt->execute([$user_id]);
 
-        $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
-        $stmt_log->execute([$_SESSION['admin_id'], 'approve_user', $user_id, "Regisztráció jóváhagyva", $_SERVER['REMOTE_ADDR']]);
+            $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
+            $stmt_log->execute([$_SESSION['admin_id'], 'approve_user', $user_id, "Regisztráció jóváhagyva", $_SERVER['REMOTE_ADDR']]);
 
-        // Opcionális: Email küldés a felhasználónak
-        $success_msg = "Regisztráció jóváhagyva!";
-    } elseif ($action === 'reject') {
-        $stmt = $pdo->prepare("UPDATE users SET status = 'rejected' WHERE id = ?");
-        $stmt->execute([$user_id]);
+            // Automatizált Értesítés / Email
+            try {
+                require_once '../notification_helper.php';
+                create_notification(
+                    $user_id,
+                    'approval',
+                    "A regisztrációdat jóváhagyták az adminisztrátorok!",
+                    "profile.php",
+                    "Regisztráció jóváhagyva - Szívhangja",
+                    "Kedves Felhasználó!\n\nÖrömmel értesítünk, hogy a regisztrációdat jóváhagytuk."
+                );
+            } catch (Throwable $notifError) {
+                error_log("Notification error in user_view: " . $notifError->getMessage());
+            }
 
-        $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
-        $stmt_log->execute([$_SESSION['admin_id'], 'reject_user', $user_id, "Regisztráció elutasítva: $reason", $_SERVER['REMOTE_ADDR']]);
+            $success_msg = "Regisztráció jóváhagyva!";
+        } elseif ($action === 'reject') {
+            $stmt = $pdo->prepare("UPDATE users SET status = 'rejected' WHERE id = ?");
+            $stmt->execute([$user_id]);
 
-        $success_msg = "Regisztráció elutasítva.";
+            $stmt_log = $pdo->prepare("INSERT INTO admin_logs (admin_id, action, target_id, details, ip_address) VALUES (?, ?, ?, ?, ?)");
+            $stmt_log->execute([$_SESSION['admin_id'], 'reject_user', $user_id, "Regisztráció elutasítva: $reason", $_SERVER['REMOTE_ADDR']]);
+
+            $success_msg = "Regisztráció elutasítva.";
+        }
+    } catch (Throwable $e) {
+        $error_msg = "Hiba történt a művelet során: " . $e->getMessage();
     }
 }
 
